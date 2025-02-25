@@ -1,11 +1,28 @@
 import os
 import openai
+import json, socket, traceback
 
 MODEL = "llama3.1:8b"
 ROLE = "system:You are an helpful assistant."
 
 #TODO:E4.1 add the stream function
 #fix it to extract line.choices[0].delta.content
+
+def stream(args, lines):
+  sock = args.get("STREAM_HOST")
+  port = int(args.get("STREAM_PORT"))
+  out = ""
+  with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.connect((sock, port))
+    try:
+      for line in lines:
+        msg = {"output": line.choices[0].delta.content}
+        s.sendall(json.dumps(msg).encode("utf-8"))
+        out += str(line) #; print(line, end='')
+    except Exception as e:
+      traceback.print_exc(e)
+      out = str(e)
+  return out
 #END TODO
 
 class Chat:
@@ -25,6 +42,7 @@ class Chat:
         
         #TODO:E4.1 
         # save args in a field
+        self.args = args
         #END TODO
         
     def add(self, msg):
@@ -40,11 +58,13 @@ class Chat:
         res = self.client.chat.completions.create(
             model=MODEL,
             messages=self.messages,
+            stream=True,
         )
         # END TODO
         try: 
             #TODO:E4.1 stream the result 
-            out = res.choices[0].message.content
+            #out = res.choices[0].message.content
+            out = stream(self.args, res)
             #END TODO
             self.add(f"assistant:{out}")
         except:
