@@ -1,5 +1,8 @@
 import os, requests as req
+import bucket
 import vision
+import time
+import base64
 
 USAGE = "Please upload a picture and I will tell you what I see"
 FORM = [
@@ -18,11 +21,18 @@ def form(args):
 
   if type(inp) is dict and "form" in inp:
     img = inp.get("form", {}).get("pic", "")
-    print(f"uploaded size {len(img)}")
-    vis = vision.Vision(args)
-    out = vis.decode(img)
-    res['html'] = f'<img src="data:image/png;base64,{img}">'
-    
+    decoded_img = base64.b64decode(img)
+    bucket_instance = bucket.Bucket(args)
+    filename = f"image_{int(time.time())}.jpg"
+    result = bucket_instance.write(filename, decoded_img)
+    if result == "OK":
+      presigned_url = bucket_instance.exturl(filename, 60*60)  # 1 hour expiration
+      vis = vision.Vision(args)
+      out = vis.decode(img)
+      res['html'] = f'<img src="{presigned_url}">'
+    else:
+      print(f"Failed to save image: {result}")
+      out = "Failed to save image"
   res['form'] = FORM
   res['output'] = out
   return res
