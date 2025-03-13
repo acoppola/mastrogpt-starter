@@ -1,6 +1,6 @@
 import os, requests as req
-import bucket
 import vision
+import bucket
 import time
 import base64
 
@@ -22,11 +22,11 @@ def form(args):
   if type(inp) is dict and "form" in inp:
     img = inp.get("form", {}).get("pic", "")
     decoded_img = base64.b64decode(img)
-    bucket_instance = bucket.Bucket(args)
-    filename = f"image_{int(time.time())}.jpg"
-    result = bucket_instance.write(filename, decoded_img)
+    buc = bucket.Bucket(args)
+    filename = f"image_s.jpg"
+    result = buc.write(filename, decoded_img)
     if result == "OK":
-      presigned_url = bucket_instance.exturl(filename, 60*60)  # 1 hour expiration
+      presigned_url = buc.exturl(filename, 60*60)  # 1 hour expiration
       vis = vision.Vision(args)
       out = vis.decode(img)
       res['html'] = f'<img src="{presigned_url}">'
